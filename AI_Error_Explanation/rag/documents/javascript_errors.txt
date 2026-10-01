@@ -1,0 +1,131 @@
+ERROR: TypeError: Cannot read properties of undefined (reading 'x') / Cannot read property 'x' of undefined
+DESCRIPTION: Occurs when code attempts to access a property or call a method on a variable that evaluates to undefined or null.
+CAUSE: The object variable has not been initialized, an API response returned undefined/null, or an asynchronous operation has not completed yet.
+SOLUTION: Use optional chaining (`?.`), check if the object exists before accessing its properties (`if (obj && obj.x)`), or provide a fallback default value with nullish coalescing (`??`).
+EXAMPLE_CODE:
+// Wrong
+const user = undefined;
+console.log(user.name); // TypeError: Cannot read properties of undefined
+
+// Correct
+const user = undefined;
+console.log(user?.name); // undefined (safe)
+// or with default value:
+console.log(user?.name ?? "Guest");
+
+---
+
+ERROR: ReferenceError: x is not defined
+DESCRIPTION: JavaScript engine cannot find a variable named `x` in the current scope or scope chain.
+CAUSE: Typo in the variable name, variable was declared with `let` or `const` inside another block scope, or the script tag/import for a dependency was not loaded.
+SOLUTION: Check the spelling of the variable. Ensure the variable is declared in the appropriate scope with `let`, `const`, or `var`. Verify import statements.
+EXAMPLE_CODE:
+// Wrong
+function printTotal() {
+    console.log(total); // ReferenceError: total is not defined
+}
+
+// Correct
+function printTotal() {
+    const total = 100;
+    console.log(total); // 100
+}
+
+---
+
+ERROR: TypeError: x is not a function
+DESCRIPTION: Attempting to invoke a value as a function when it is actually a string, object, number, undefined, or null.
+CAUSE: Calling a non-existent method on an object, shadowing a function with a variable of the same name, or a typo in the method name.
+SOLUTION: Verify the method exists on the target object. Check with `typeof fn === 'function'` before invoking if dynamically loaded.
+EXAMPLE_CODE:
+// Wrong
+const data = { count: 5 };
+data.count(); // TypeError: data.count is not a function
+
+// Correct
+const data = { count: 5, getCount: function() { return this.count; } };
+console.log(data.getCount()); // 5
+
+---
+
+ERROR: SyntaxError: Unexpected token
+DESCRIPTION: The JavaScript parser encountered a character or token that violates JavaScript grammar rules.
+CAUSE: Missing closing bracket, parenthesis, brace, comma, or quotes; or trying to parse invalid JSON with JSON.parse().
+SOLUTION: Inspect the line number specified in the error message for unclosed quotes or brackets. If using `JSON.parse()`, validate that the input string is valid JSON format.
+EXAMPLE_CODE:
+// Wrong
+const data = JSON.parse("{ 'name': 'John' }"); // Single quotes are invalid JSON!
+
+// Correct
+const data = JSON.parse('{ "name": "John" }'); // Valid double-quoted JSON
+
+---
+
+ERROR: RangeError: Maximum call stack size exceeded
+DESCRIPTION: The execution call stack limit has been reached, causing a stack overflow.
+CAUSE: A function calls itself indefinitely without a termination base case (infinite recursion), or two functions call each other in an infinite cycle.
+SOLUTION: Ensure all recursive functions have a well-defined base case that terminates recursion. If processing large trees, convert recursion to an iterative loop with a stack or queue.
+EXAMPLE_CODE:
+// Wrong
+function countdown(n) {
+    return countdown(n - 1); // No base case -> infinite recursion
+}
+
+// Correct
+function countdown(n) {
+    if (n <= 0) return 0; // Base condition
+    return countdown(n - 1);
+}
+
+---
+
+ERROR: CORS Error: Access to fetch at '...' has been blocked by CORS policy
+DESCRIPTION: The browser blocked an HTTP request made via fetch() or XMLHttpRequest because the server did not return the appropriate Cross-Origin Resource Sharing (CORS) headers.
+CAUSE: Frontend origin (e.g. http://localhost:3000) differs from backend API origin (e.g. http://localhost:5000), and the server has not configured `Access-Control-Allow-Origin`.
+SOLUTION: Configure CORS on the backend server. In Flask use `flask_cors.CORS(app)`. In Express.js use `app.use(cors())`. Alternatively, configure a reverse proxy in development (e.g. Vite/Webpack proxy).
+EXAMPLE_CODE:
+// Flask Backend Fix:
+from flask import Flask
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # Enables CORS for all routes
+
+---
+
+ERROR: UnhandledPromiseRejection: Unhandled promise rejection
+DESCRIPTION: A Promise was rejected (threw an error), but no `.catch()` handler or `try...catch` block was attached to handle it.
+CAUSE: Network failure in `fetch()`, database query error, or thrown exception inside an async function that was not caught.
+SOLUTION: Wrap `await` calls in `try...catch` blocks, or chain `.catch(err => ...)` to Promises.
+EXAMPLE_CODE:
+// Wrong
+async function fetchData() {
+    const res = await fetch("https://api.example.com/data");
+    const json = await res.json();
+}
+
+// Correct
+async function fetchData() {
+    try {
+        const res = await fetch("https://api.example.com/data");
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const json = await res.json();
+        return json;
+    } catch (err) {
+        console.error("Fetch failed:", err);
+    }
+}
+
+---
+
+ERROR: React Warning: Each child in a list should have a unique 'key' prop
+DESCRIPTION: React requires a unique `key` attribute on items rendered from an array so its reconciliation algorithm can track element additions, moves, and deletions.
+CAUSE: Mapping over an array in JSX without providing a `key` prop on the top-level element inside the map callback.
+SOLUTION: Add a unique, stable identifier (such as `item.id`) to the `key` prop of the returned JSX element. Avoid using array index if items can be reordered or deleted.
+EXAMPLE_CODE:
+// Wrong
+const items = [{ id: 1, text: "A" }, { id: 2, text: "B" }];
+return <ul>{items.map(item => <li>{item.text}</li>)}</ul>;
+
+// Correct
+return <ul>{items.map(item => <li key={item.id}>{item.text}</li>)}</ul>;

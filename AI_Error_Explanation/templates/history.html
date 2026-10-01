@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Error Explanation History & Archive - Browse previously analyzed programming errors and AI solutions.">
+    <title>Query History | AI Error Explanation System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Auth Service -->
+    <script src="/static/firebase-config.js"></script>
+</head>
+<body class="history-page-body">
+
+    <!-- ═══ AUTH GUARD OVERLAY ═════════════════════════════════════════════════ -->
+    <div class="auth-guard-overlay" id="auth-guard-overlay">
+        <div class="auth-guard-card">
+            <div class="loading-ring auth-spin"></div>
+            <p class="auth-guard-text">Checking authentication...</p>
+        </div>
+    </div>
+
+    <!-- ═══ ANIMATED BACKGROUND ════════════════════════════════════════════════ -->
+    <div class="bg-gradient" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="floating-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- ═══ NAVBAR ═════════════════════════════════════════════════════════════ -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand">
+            <a href="/" class="brand-link" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
+                <div class="nav-logo" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <path d="M14 2L24 8V20L14 26L4 20V8L14 2Z" stroke="url(#logoGradHistory)" stroke-width="2" fill="none"/>
+                        <circle cx="14" cy="14" r="4" fill="url(#logoGradHistory)"/>
+                        <defs>
+                            <linearGradient id="logoGradHistory" x1="4" y1="2" x2="24" y2="26">
+                                <stop offset="0%" stop-color="#6366f1"/>
+                                <stop offset="100%" stop-color="#a855f7"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="nav-title">AI<span class="gradient-text">Error</span>Explain</span>
+            </a>
+        </div>
+
+        <div class="nav-actions">
+            <!-- Link back to Workbench -->
+            <a href="/" class="btn-ghost" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                </svg>
+                Workbench
+            </a>
+
+            <!-- Active History Pill -->
+            <span class="nav-item-active" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.35); border-radius: 9999px; font-size: 0.85rem; font-weight: 600; color: #a5b4fc;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                </svg>
+                All History
+            </span>
+
+            <!-- User profile & Sign out -->
+            <div class="nav-user-profile" id="nav-user-profile" style="display: none;">
+                <div class="user-avatar" id="nav-user-avatar">U</div>
+                <div class="user-meta">
+                    <span class="user-email-text" id="nav-user-email">User</span>
+                    <span class="user-source-tag" id="nav-user-tag">Firebase</span>
+                </div>
+                <button class="btn-ghost btn-logout" id="btn-logout" aria-label="Sign out" title="Sign out">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                    </svg>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ HISTORY MAIN CONTAINER ════════════════════════════════════════════ -->
+    <main class="history-container">
+        
+        <!-- Header Banner -->
+        <header class="history-page-header">
+            <div class="hero-badge">
+                <span class="badge-dot" aria-hidden="true"></span>
+                Archived AI Diagnoses
+            </div>
+            <h1 class="history-page-title">
+                Diagnostic <span class="gradient-text">History</span>
+            </h1>
+            <p class="history-page-sub">
+                Review all your previously analyzed error stack traces, root cause breakdowns, and solutions.
+            </p>
+        </header>
+
+        <!-- Controls & Filter Toolbar -->
+        <section class="history-toolbar card">
+            <div class="search-box-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input
+                    type="text"
+                    id="history-search-input"
+                    class="history-search-input"
+                    placeholder="Search errors or solutions by keyword..."
+                    aria-label="Search error history"
+                >
+            </div>
+
+            <!-- Language Filters -->
+            <div class="history-filter-chips" role="group" aria-label="Filter by language">
+                <button class="filter-chip active" data-lang="all">All</button>
+                <button class="filter-chip" data-lang="python">Python</button>
+                <button class="filter-chip" data-lang="java">Java</button>
+                <button class="filter-chip" data-lang="javascript">JavaScript</button>
+                <button class="filter-chip" data-lang="sql">SQL</button>
+            </div>
+
+            <div class="toolbar-actions">
+                <span class="history-count-badge" id="history-total-count">Loading...</span>
+                <button class="btn-ghost btn-sm btn-clear-danger" id="btn-clear-all-history" title="Permanently delete all query history">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Clear All
+                </button>
+            </div>
+        </section>
+
+        <!-- History Items Grid / List -->
+        <section class="history-grid" id="history-grid-container" aria-live="polite">
+            <div class="history-empty-state">
+                <div class="loading-ring"></div>
+                <p>Loading query history from database...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ═══ SOLUTION DETAILS MODAL ═════════════════════════════════════════════ -->
+    <div class="modal" id="modal-solution" role="dialog" aria-modal="true" style="display: none;">
+        <div class="modal-card modal-lg" style="max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="result-badge" id="modal-lang-badge">PYTHON</span>
+                    <h3 class="modal-title" style="margin-left: 8px;">Detailed Solution</h3>
+                </div>
+                <button class="modal-close" id="btn-close-solution" aria-label="Close modal">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="overflow-y: auto; flex: 1;">
+                <div class="modal-original-error">
+                    <span class="sub-label">Original Error Message:</span>
+                    <pre class="error-pre"><code id="modal-error-code"></code></pre>
+                </div>
+
+                <div class="modal-divider"></div>
+
+                <div class="modal-explanation-content">
+                    <span class="sub-label">AI Diagnosis &amp; Fix:</span>
+                    <div class="result-body markdown-body" id="modal-explanation-body"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="modal-meta-text" id="modal-meta-info">Model: llama3.2</span>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn-secondary" id="btn-modal-open-workbench">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                        </svg>
+                        Open in Workbench
+                    </button>
+                    <button type="button" class="btn-primary" id="btn-modal-copy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                        </svg>
+                        Copy Solution
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal overlay & Toasts -->
+    <div class="overlay" id="history-overlay" style="display: none;" aria-hidden="true"></div>
+    <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+    <!-- ═══ HISTORY PAGE JAVASCRIPT CONTROLLER ════════════════════════════════ -->
+    <script>
+    (function() {
+        'use strict';
+
+        const auth = window.FirebaseAuthService;
+        const $ = id => document.getElementById(id);
+
+        let allHistoryItems = [];
+        let activeLangFilter = 'all';
+        let currentAuthUser = null;
+
+        const gridContainer = $('history-grid-container');
+        const searchInput = $('history-search-input');
+        const countBadge = $('history-total-count');
+        const overlayGuard = $('auth-guard-overlay');
+        const solutionModal = $('modal-solution');
+        const overlay = $('history-overlay');
+
+        // Check authentication
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+                return;
+            }
+            currentAuthUser = user;
+
+            // Lift guard
+            if (overlayGuard) {
+                overlayGuard.classList.add('fade-out');
+                setTimeout(() => { overlayGuard.style.display = 'none'; }, 400);
+            }
+
+            // Navbar profile
+            const userProfile = $('nav-user-profile');
+            if (userProfile) {
+                userProfile.style.display = 'inline-flex';
+                const name = user.displayName || user.email || 'Developer';
+                $('nav-user-email').textContent = name;
+                $('nav-user-avatar').textContent = (name[0] || 'D').toUpperCase();
+                $('nav-user-tag').textContent = user.isDemo ? 'Demo Mode' : 'Firebase';
+            }
+
+            // Load queries for user
+            fetchHistory();
+        });
+
+        // Sign out button
+        $('btn-logout').addEventListener('click', async () => {
+            if (confirm('Sign out of your account?')) {
+                await auth.signOut();
+                window.location.href = '/login/';
+            }
+        });
+
+        // Fetch History from API
+        async function fetchHistory() {
+            try {
+                const emailParam = currentAuthUser?.email ? `?limit=100&user_email=${encodeURIComponent(currentAuthUser.email)}` : '?limit=100';
+                const res = await fetch(`/api/history/${emailParam}`);
+                const data = await res.json();
+                allHistoryItems = data.history || [];
+                renderGrid();
+            } catch (err) {
+                gridContainer.innerHTML = `
+                    <div class="history-empty-state">
+                        <p style="color: var(--c-red);">Failed to connect to database: ${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render Cards
+        function renderGrid() {
+            const query = searchInput.value.toLowerCase().trim();
+            const filtered = allHistoryItems.filter(item => {
+                const matchLang = activeLangFilter === 'all' || (item.language || '').toLowerCase() === activeLangFilter;
+                const matchText = !query ||
+                    (item.error_text || '').toLowerCase().includes(query) ||
+                    (item.explanation || '').toLowerCase().includes(query);
+                return matchLang && matchText;
+            });
+
+            countBadge.textContent = `${filtered.length} of ${allHistoryItems.length} entries`;
+
+            if (filtered.length === 0) {
+                gridContainer.innerHTML = `
+                    <div class="history-empty-state card">
+                        <div style="font-size: 2.5rem; margin-bottom: 12px;">🔍</div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 6px;">No Matching Entries Found</h3>
+                        <p style="color: var(--c-text-2); font-size: 0.9rem; max-width: 400px; margin-bottom: 20px;">
+                            ${allHistoryItems.length === 0 ? "You haven't explained any errors yet. Head over to the workbench to analyze your first stack trace!" : "Try adjusting your search terms or language filter."}
+                        </p>
+                        <a href="/" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14m-7-7h14"/>
+                            </svg>
+                            New Error Diagnosis
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            gridContainer.innerHTML = '';
+            filtered.forEach(item => {
+                const card = document.createElement('article');
+                card.className = 'history-card card';
+                const langUpper = (item.language || 'GENERAL').toUpperCase();
+                const previewText = (item.error_text || '').substring(0, 150);
+                const isTruncated = (item.error_text || '').length > 150;
+
+                card.innerHTML = `
+                    <div class="history-card-header">
+                        <div class="card-badges">
+                            <span class="result-badge badge-${(item.language || 'general').toLowerCase()}">${langUpper}</span>
+                            <span class="card-model-badge">${item.model_used || 'AI'}</span>
+                        </div>
+                        <span class="card-date">${formatTime(item.timestamp)}</span>
+                    </div>
+
+                    <div class="history-card-code">
+                        <code>${escapeHtml(previewText)}${isTruncated ? '...' : ''}</code>
+                    </div>
+
+                    <div class="history-card-footer">
+                        <button class="btn-ghost btn-sm btn-delete-entry" data-id="${item.id}" title="Delete this entry">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Delete
+                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-secondary btn-sm btn-open-workbench" data-id="${item.id}">
+                                Workbench ↗
+                            </button>
+                            <button class="btn-primary btn-sm btn-view-solution" data-id="${item.id}">
+                                View Solution
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Listeners
+                card.querySelector('.btn-view-solution').addEventListener('click', () => openSolutionModal(item));
+                card.querySelector('.btn-open-workbench').addEventListener('click', () => {
+                    sessionStorage.setItem('ai_workbench_preload_error', item.error_text || '');
+                    sessionStorage.setItem('ai_workbench_preload_lang', item.language || 'auto');
+                    window.location.href = '/';
+                });
+                card.querySelector('.btn-delete-entry').addEventListener('click', async () => {
+                    if (confirm('Delete this history record?')) {
+                        await deleteItem(item.id);
+                    }
+                });
+
+                gridContainer.appendChild(card);
+            });
+        }
+
+        // Delete Item
+        async function deleteItem(id) {
+            try {
+                const res = await fetch(`/api/history/${id}/`, { method: 'DELETE' });
+                if (res.ok) {
+                    allHistoryItems = allHistoryItems.filter(i => i.id !== id);
+                    renderGrid();
+                    showToast('History record removed.', 'info');
+                }
+            } catch {
+                showToast('Failed to delete item.', 'error');
+            }
+        }
+
+        // Clear All
+        $('btn-clear-all-history').addEventListener('click', async () => {
+            if (confirm('Are you sure you want to permanently clear ALL error history?')) {
+                try {
+                    const res = await fetch('/api/history/', { method: 'DELETE' });
+                    if (res.ok) {
+                        allHistoryItems = [];
+                        renderGrid();
+                        showToast('All history cleared.', 'success');
+                    }
+                } catch {
+                    showToast('Failed to clear history.', 'error');
+                }
+            }
+        });
+
+        // Search & Filter
+        searchInput.addEventListener('input', renderGrid);
+
+        document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeLangFilter = btn.dataset.lang;
+                renderGrid();
+            });
+        });
+
+        // Solution Modal
+        let activeModalItem = null;
+        function openSolutionModal(item) {
+            activeModalItem = item;
+            $('modal-lang-badge').textContent = (item.language || 'GENERAL').toUpperCase();
+            $('modal-error-code').textContent = item.error_text || '';
+            $('modal-explanation-body').innerHTML = renderMarkdown(item.explanation || '');
+            $('modal-meta-info').textContent = `Model: ${item.model_used || 'default'} · ${formatTime(item.timestamp)}`;
+            solutionModal.style.display = 'flex';
+            solutionModal.classList.add('visible');
+            overlay.style.display = 'block';
+            overlay.classList.add('visible');
+            overlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeSolutionModal() {
+            solutionModal.classList.remove('visible');
+            solutionModal.style.display = 'none';
+            overlay.classList.remove('visible');
+            overlay.style.display = 'none';
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+
+        solutionModal.addEventListener('click', event => {
+            if (event.target === solutionModal) closeSolutionModal();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && solutionModal.classList.contains('visible')) {
+                closeSolutionModal();
+            }
+        });
+        $('btn-close-solution').addEventListener('click', closeSolutionModal);
+        overlay.addEventListener('click', closeSolutionModal);
+
+        $('btn-modal-open-workbench').addEventListener('click', () => {
+            if (activeModalItem) {
+                sessionStorage.setItem('ai_workbench_preload_error', activeModalItem.error_text || '');
+                sessionStorage.setItem('ai_workbench_preload_lang', activeModalItem.language || 'auto');
+                window.location.href = '/';
+            }
+        });
+
+        $('btn-modal-copy').addEventListener('click', () => {
+            if (activeModalItem && activeModalItem.explanation) {
+                navigator.clipboard.writeText(activeModalItem.explanation).then(() => {
+                    showToast('Solution copied to clipboard!', 'success');
+                });
+            }
+        });
+
+        // ─── Utilities ─────────────────────────────────────────────────────────
+        function escapeHtml(str) {
+            const p = document.createElement('p');
+            p.textContent = str;
+            return p.innerHTML;
+        }
+
+        function formatTime(ts) {
+            if (!ts) return '';
+            try {
+                const d = new Date(ts.replace(' ', 'T') + (ts.includes('+') ? '' : 'Z'));
+                return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch { return ts; }
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return '';
+            const codeBlocks = [];
+            let processed = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+                const id = `__CODE_${codeBlocks.length}__`;
+                codeBlocks.push({ lang: lang || 'code', code: code.trim() });
+                return id;
+            });
+            let html = escapeHtml(processed);
+            html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/### ([^\n]+)/g, '<h4>$1</h4>');
+            html = html.replace(/## ([^\n]+)/g, '<h3>$1</h3>');
+            html = html.replace(/# ([^\n]+)/g, '<h2>$1</h2>');
+            html = html.replace(/^> ([^\n]+)/gm, '<blockquote>$1</blockquote>');
+            html = html.replace(/\n\n/g, '<br><br>');
+
+            codeBlocks.forEach((b, i) => {
+                const codeHtml = `<div class="code-block-wrapper"><div class="code-block-header"><span>${escapeHtml(b.lang)}</span></div><pre><code>${escapeHtml(b.code)}</code></pre></div>`;
+                html = html.replace(`__CODE_${i}__`, codeHtml);
+            });
+            return html;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = $('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('visible'));
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+    })();
+    </script>
+</body>
+</html>

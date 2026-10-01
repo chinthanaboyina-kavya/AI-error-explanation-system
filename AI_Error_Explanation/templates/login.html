@@ -1,0 +1,754 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign In to AI Error Explanation System - Powered by Firebase Authentication and AI Diagnostics">
+    <title>Sign In &amp; Register | AI Error Explanation System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    
+    <!-- Firebase Compat SDK (v10.8.0) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Auth Service -->
+    <script src="{% static 'firebase-config.js' %}"></script>
+</head>
+<body class="auth-body">
+
+    <!-- ═══ ANIMATED BACKGROUND ════════════════════════════════════════════════ -->
+    <div class="bg-gradient" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="floating-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- ═══ TOP NAVBAR ═════════════════════════════════════════════════════════ -->
+    <header class="auth-topbar">
+        <div class="nav-brand">
+            <div class="nav-logo" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <path d="M14 2L24 8V20L14 26L4 20V8L14 2Z" stroke="url(#logoGradAuth)" stroke-width="2" fill="none"/>
+                    <circle cx="14" cy="14" r="4" fill="url(#logoGradAuth)"/>
+                    <defs>
+                        <linearGradient id="logoGradAuth" x1="4" y1="2" x2="24" y2="26">
+                            <stop offset="0%" stop-color="#6366f1"/>
+                            <stop offset="100%" stop-color="#a855f7"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="nav-title">AI<span class="gradient-text">Error</span>Explain</span>
+        </div>
+
+        <div class="auth-topbar-actions">
+            <div class="firebase-status-badge" id="firebase-status-pill" title="Firebase Status">
+                <span class="status-dot-pulse"></span>
+                <span id="firebase-status-label">Firebase Auth</span>
+            </div>
+            <button class="btn-ghost btn-sm" id="btn-open-firebase-config" title="Configure your Firebase API keys">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Firebase Keys
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══ AUTHENTICATION CARD CONTAINER ═════════════════════════════════════ -->
+    <main class="auth-page-container">
+        
+        <!-- Live Demo Notice Banner (if placeholder config) -->
+        <div class="auth-notice-banner" id="auth-notice-banner" style="display: none;">
+            <div class="notice-icon">💡</div>
+            <div class="notice-text">
+                <strong>Sandbox / Demo Mode:</strong> Default placeholder keys are in use. You can register/login with any email &amp; password immediately, or click <strong>Firebase Keys</strong> above to link your live project.
+            </div>
+            <button class="notice-close" id="btn-close-notice" aria-label="Dismiss">&times;</button>
+        </div>
+
+        <div class="auth-card" id="auth-main-card">
+            
+            <!-- Auth Header -->
+            <div class="auth-header">
+                <div class="auth-badge">
+                    <span class="badge-dot"></span>
+                    Secure AI Workbench Access
+                </div>
+                <h1 class="auth-title">Welcome Back</h1>
+                <p class="auth-subtitle">Sign in or register to unlock instant error diagnosis, code fixes, and technical explanations.</p>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="auth-tabs" role="tablist">
+                <button class="auth-tab active" id="tab-login" role="tab" aria-selected="true" aria-controls="form-login">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+                    </svg>
+                    Sign In
+                </button>
+                <button class="auth-tab" id="tab-signup" role="tab" aria-selected="false" aria-controls="form-signup">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    Create Account
+                </button>
+            </div>
+
+            <!-- Alert Box for Errors & Warnings -->
+            <div class="auth-alert" id="auth-alert" style="display: none;" role="alert">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="auth-alert-message">Error message</span>
+            </div>
+
+            <!-- ─── 1. SIGN IN FORM ─────────────────────────────────────────── -->
+            <form id="form-login" class="auth-form active" novalidate>
+                <div class="form-group">
+                    <label for="login-email" class="form-label">Email Address</label>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                        </svg>
+                        <input
+                            type="email"
+                            id="login-email"
+                            class="auth-input"
+                            placeholder="name@company.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-row">
+                        <label for="login-password" class="form-label">Password</label>
+                        <button type="button" class="btn-link" id="btn-forgot-password-link">Forgot password?</button>
+                    </div>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input
+                            type="password"
+                            id="login-password"
+                            class="auth-input"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button type="button" class="password-toggle" id="toggle-login-pass" aria-label="Toggle password visibility">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-eye">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-auth-submit" id="btn-submit-login">
+                    <span class="btn-text">Sign In to Dashboard</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arrow">
+                        <path d="M5 12h14m-7-7 7 7-7 7"/>
+                    </svg>
+                    <div class="btn-loader" id="loader-login" style="display: none;" aria-hidden="true"></div>
+                </button>
+            </form>
+
+            <!-- ─── 2. SIGN UP FORM ─────────────────────────────────────────── -->
+            <form id="form-signup" class="auth-form" style="display: none;" novalidate>
+                <div class="form-group">
+                    <label for="signup-name" class="form-label">Full Name</label>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <input
+                            type="text"
+                            id="signup-name"
+                            class="auth-input"
+                            placeholder="e.g. Alex Morgan"
+                            autocomplete="name"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-email" class="form-label">Email Address</label>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                        </svg>
+                        <input
+                            type="email"
+                            id="signup-email"
+                            class="auth-input"
+                            placeholder="name@company.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-password" class="form-label">Password</label>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input
+                            type="password"
+                            id="signup-password"
+                            class="auth-input"
+                            placeholder="At least 6 characters"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <button type="button" class="password-toggle" id="toggle-signup-pass" aria-label="Toggle password visibility">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-eye">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Password strength bar -->
+                    <div class="strength-meter">
+                        <div class="strength-bar" id="strength-bar"></div>
+                    </div>
+                    <span class="strength-label" id="strength-label">Password strength</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-confirm-password" class="form-label">Confirm Password</label>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <input
+                            type="password"
+                            id="signup-confirm-password"
+                            class="auth-input"
+                            placeholder="Repeat password"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-auth-submit" id="btn-submit-signup">
+                    <span class="btn-text">Create Free Account</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arrow">
+                        <path d="M5 12h14m-7-7 7 7-7 7"/>
+                    </svg>
+                    <div class="btn-loader" id="loader-signup" style="display: none;" aria-hidden="true"></div>
+                </button>
+            </form>
+
+            <!-- ─── SOCIAL SIGN-IN DIVIDER ──────────────────────────────────── -->
+            <div class="auth-divider">
+                <span>or continue with</span>
+            </div>
+
+            <div class="social-buttons">
+                <!-- Google Sign-In -->
+                <button type="button" class="btn-social btn-google" id="btn-google-login">
+                    <svg width="18" height="18" viewBox="0 0 24 24" class="google-icon">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24Z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 10.03 0 12c0 1.97.45 3.83 1.25 5.42l4.03-3.15Z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <!-- One-click Demo Account -->
+                <button type="button" class="btn-social btn-demo-quick" id="btn-quick-demo">
+                    <span class="demo-lightning">⚡</span>
+                    Instant Test Account
+                </button>
+            </div>
+
+            <!-- Footer note -->
+            <div class="auth-card-footer">
+                <span class="footer-privacy-text">
+                    By accessing, you agree to our 
+                    <a href="javascript:void(0)" class="link-subtle">Terms of Service</a> &amp; 
+                    <a href="javascript:void(0)" class="link-subtle">Privacy Policy</a>.
+                </span>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══ FORGOT PASSWORD MODAL ═════════════════════════════════════════════ -->
+    <div class="modal" id="modal-forgot-password" role="dialog" aria-modal="true" aria-labelledby="modal-forgot-title" style="display: none;">
+        <div class="modal-card modal-auth-card">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="icon-round-bubble">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <h3 id="modal-forgot-title" class="modal-title">Reset Your Password</h3>
+                </div>
+                <button class="modal-close" id="btn-close-forgot-modal" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">
+                    Enter the email address tied to your account. We'll send you a secure Firebase password reset link immediately.
+                </p>
+                <div class="form-group">
+                    <label for="forgot-email" class="form-label">Email Address</label>
+                    <div class="input-icon-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="input-icon">
+                            <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                        </svg>
+                        <input
+                            type="email"
+                            id="forgot-email"
+                            class="auth-input"
+                            placeholder="name@company.com"
+                        >
+                    </div>
+                </div>
+                <div class="auth-alert" id="forgot-alert" style="display: none;">
+                    <span id="forgot-alert-msg"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="btn-cancel-forgot">Cancel</button>
+                <button type="button" class="btn-primary" id="btn-send-reset-email">
+                    <span>Send Reset Link</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ FIREBASE CONFIGURATION MODAL ══════════════════════════════════════ -->
+    <div class="modal" id="modal-firebase-config" role="dialog" aria-modal="true" aria-labelledby="modal-config-title" style="display: none;">
+        <div class="modal-card modal-auth-card modal-lg">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="icon-round-bubble">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </div>
+                    <h3 id="modal-config-title" class="modal-title">Firebase Project Configuration</h3>
+                </div>
+                <button class="modal-close" id="btn-close-config-modal" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">
+                    Connect your real Google Firebase project! Go to 
+                    <a href="https://console.firebase.google.com" target="_blank" rel="noopener" class="link-highlight">Firebase Console ↗</a> 
+                    &gt; <em>Project Settings</em> &gt; <em>Your apps (Web)</em> and copy the config object below:
+                </p>
+
+                <div class="config-instructions">
+                    <div class="step-badge">1</div>
+                    <div class="step-text">Enable <strong>Email/Password</strong> and/or <strong>Google</strong> in Firebase Console &gt; Authentication &gt; Sign-in method.</div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="firebase-config-json" class="form-label">Firebase Config (JSON or JS Object):</label>
+                    <textarea
+                        id="firebase-config-json"
+                        class="code-textarea"
+                        rows="8"
+                        spellcheck="false"
+                        placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "my-project.firebaseapp.com",
+  "projectId": "my-project",
+  "storageBucket": "my-project.appspot.com",
+  "messagingSenderId": "1234567890",
+  "appId": "1:1234567890:web:abcd..."
+}'
+                    ></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" id="btn-reset-config">Reset to Default</button>
+                <button type="button" class="btn-primary" id="btn-save-firebase-config">
+                    <span>Save &amp; Reload</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ TOAST NOTIFICATIONS ═══════════════════════════════════════════════ -->
+    <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+    <!-- ═══ MODAL OVERLAY ═════════════════════════════════════════════════════ -->
+    <div class="overlay" id="auth-modal-overlay" style="display: none;" aria-hidden="true"></div>
+
+    <!-- ═══ AUTH PAGE CONTROLLER SCRIPT ═══════════════════════════════════════ -->
+    <script>
+    (function() {
+        'use strict';
+
+        const auth = window.FirebaseAuthService;
+        const $ = id => document.getElementById(id);
+
+        // Elements
+        const tabLogin = $('tab-login');
+        const tabSignup = $('tab-signup');
+        const formLogin = $('form-login');
+        const formSignup = $('form-signup');
+        const alertBox = $('auth-alert');
+        const alertMsg = $('auth-alert-message');
+        const noticeBanner = $('auth-notice-banner');
+        const statusLabel = $('firebase-status-label');
+        const statusPill = $('firebase-status-pill');
+
+        // Modals
+        const modalForgot = $('modal-forgot-password');
+        const modalConfig = $('modal-firebase-config');
+        const overlay = $('auth-modal-overlay');
+
+        // Status update
+        function updateStatusUI() {
+            if (auth.isRealConfigured()) {
+                statusLabel.textContent = 'Firebase Live [OK]';
+                statusPill.classList.add('live');
+                noticeBanner.style.display = 'none';
+            } else {
+                statusLabel.textContent = 'Demo Mode (Local)';
+                statusPill.classList.remove('live');
+                noticeBanner.style.display = 'flex';
+            }
+        }
+        updateStatusUI();
+
+        $('btn-close-notice').addEventListener('click', () => {
+            noticeBanner.style.display = 'none';
+        });
+
+        // If user is already authenticated, redirect straight to dashboard
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                showToast(`Welcome back, ${user.displayName || user.email}! Redirecting...`, 'success', 2000);
+                setTimeout(() => {
+                    const params = new URLSearchParams(window.location.search);
+                    const next = params.get('next') || '/';
+                    window.location.href = next;
+                }, 800);
+            }
+        });
+
+        // Tab Switching
+        tabLogin.addEventListener('click', () => switchTab('login'));
+        tabSignup.addEventListener('click', () => switchTab('signup'));
+
+        function switchTab(mode) {
+            hideAlert();
+            if (mode === 'login') {
+                tabLogin.classList.add('active');
+                tabLogin.setAttribute('aria-selected', 'true');
+                tabSignup.classList.remove('active');
+                tabSignup.setAttribute('aria-selected', 'false');
+                formLogin.style.display = 'block';
+                formSignup.style.display = 'none';
+                $('login-email').focus();
+            } else {
+                tabSignup.classList.add('active');
+                tabSignup.setAttribute('aria-selected', 'true');
+                tabLogin.classList.remove('active');
+                tabLogin.setAttribute('aria-selected', 'false');
+                formSignup.style.display = 'block';
+                formLogin.style.display = 'none';
+                $('signup-name').focus();
+            }
+        }
+
+        // Show/Hide Password toggles
+        setupPasswordToggle('toggle-login-pass', 'login-password');
+        setupPasswordToggle('toggle-signup-pass', 'signup-password');
+
+        function setupPasswordToggle(btnId, inputId) {
+            const btn = $(btnId);
+            const input = $(inputId);
+            if (!btn || !input) return;
+            btn.addEventListener('click', () => {
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                btn.classList.toggle('active', isPassword);
+            });
+        }
+
+        // Password Strength Indicator
+        const passInput = $('signup-password');
+        const strengthBar = $('strength-bar');
+        const strengthLabel = $('strength-label');
+
+        passInput.addEventListener('input', () => {
+            const val = passInput.value;
+            let score = 0;
+            if (val.length >= 6) score++;
+            if (val.length >= 10) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+
+            strengthBar.className = 'strength-bar';
+            if (!val) {
+                strengthBar.style.width = '0%';
+                strengthLabel.textContent = 'Password strength';
+            } else if (score <= 2) {
+                strengthBar.classList.add('weak');
+                strengthLabel.textContent = 'Weak (use at least 6 characters with mixed symbols)';
+            } else if (score <= 4) {
+                strengthBar.classList.add('medium');
+                strengthLabel.textContent = 'Good password';
+            } else {
+                strengthBar.classList.add('strong');
+                strengthLabel.textContent = 'Strong & secure password!';
+            }
+        });
+
+        // ─── LOGIN SUBMIT ──────────────────────────────────────────────────────
+        formLogin.addEventListener('submit', async e => {
+            e.preventDefault();
+            hideAlert();
+
+            const email = $('login-email').value.trim();
+            const password = $('login-password').value;
+            const btn = $('btn-submit-login');
+            const loader = $('loader-login');
+
+            if (!email || !password) {
+                showAlert('Please fill in both email and password.');
+                return;
+            }
+
+            setBtnLoading(btn, loader, true);
+            try {
+                const user = await auth.signIn(email, password);
+                showToast(`Signed in successfully!`, 'success');
+                // Redirect will be triggered by onAuthStateChanged
+            } catch (err) {
+                showAlert(err.message);
+                setBtnLoading(btn, loader, false);
+            }
+        });
+
+        // ─── SIGN UP SUBMIT ────────────────────────────────────────────────────
+        formSignup.addEventListener('submit', async e => {
+            e.preventDefault();
+            hideAlert();
+
+            const name = $('signup-name').value.trim();
+            const email = $('signup-email').value.trim();
+            const password = $('signup-password').value;
+            const confirmPass = $('signup-confirm-password').value;
+            const btn = $('btn-submit-signup');
+            const loader = $('loader-signup');
+
+            if (!name) {
+                showAlert('Please enter your full name.');
+                return;
+            }
+            if (!email) {
+                showAlert('Please enter a valid email address.');
+                return;
+            }
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long.');
+                return;
+            }
+            if (password !== confirmPass) {
+                showAlert('Passwords do not match. Please verify both fields.');
+                return;
+            }
+
+            setBtnLoading(btn, loader, true);
+            try {
+                const user = await auth.signUp(email, password, name);
+                showToast(`Account created! Welcome, ${name}.`, 'success');
+            } catch (err) {
+                showAlert(err.message);
+                setBtnLoading(btn, loader, false);
+            }
+        });
+
+        // ─── GOOGLE SIGN IN ────────────────────────────────────────────────────
+        $('btn-google-login').addEventListener('click', async () => {
+            hideAlert();
+            try {
+                await auth.googleSignIn();
+                showToast('Signed in with Google!', 'success');
+            } catch (err) {
+                showAlert(err.message);
+            }
+        });
+
+        // ─── INSTANT QUICK DEMO LOGIN ──────────────────────────────────────────
+        $('btn-quick-demo').addEventListener('click', async () => {
+            hideAlert();
+            $('login-email').value = 'developer@example.com';
+            $('login-password').value = 'demo1234';
+            try {
+                await auth.signIn('developer@example.com', 'demo1234');
+                showToast('Logged in as Lead Engineer (Demo)!', 'success');
+            } catch (err) {
+                showAlert(err.message);
+            }
+        });
+
+        // ─── FORGOT PASSWORD MODAL ─────────────────────────────────────────────
+        $('btn-forgot-password-link').addEventListener('click', () => {
+            $('forgot-email').value = $('login-email').value;
+            $('forgot-alert').style.display = 'none';
+            modalForgot.style.display = 'flex';
+            overlay.style.display = 'block';
+            $('forgot-email').focus();
+        });
+
+        $('btn-close-forgot-modal').addEventListener('click', closeForgotModal);
+        $('btn-cancel-forgot').addEventListener('click', closeForgotModal);
+
+        function closeForgotModal() {
+            modalForgot.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        $('btn-send-reset-email').addEventListener('click', async () => {
+            const email = $('forgot-email').value.trim();
+            const forgotAlert = $('forgot-alert');
+            const forgotMsg = $('forgot-alert-msg');
+            forgotAlert.style.display = 'none';
+
+            if (!email) {
+                forgotAlert.style.display = 'flex';
+                forgotMsg.textContent = 'Please enter your email.';
+                return;
+            }
+
+            try {
+                const res = await auth.resetPassword(email);
+                showToast(res.message, 'success', 5000);
+                closeForgotModal();
+            } catch (err) {
+                forgotAlert.style.display = 'flex';
+                forgotMsg.textContent = err.message;
+            }
+        });
+
+        // ─── FIREBASE CONFIG MODAL ─────────────────────────────────────────────
+        $('btn-open-firebase-config').addEventListener('click', () => {
+            const cur = auth.getConfig();
+            $('firebase-config-json').value = JSON.stringify(cur, null, 2);
+            modalConfig.style.display = 'flex';
+            overlay.style.display = 'block';
+        });
+
+        $('btn-close-config-modal').addEventListener('click', closeConfigModal);
+        function closeConfigModal() {
+            modalConfig.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        overlay.addEventListener('click', () => {
+            closeForgotModal();
+            closeConfigModal();
+        });
+
+        $('btn-save-firebase-config').addEventListener('click', () => {
+            const text = $('firebase-config-json').value.trim();
+            try {
+                // Safely evaluate or parse JSON / JS object
+                let configObj;
+                try {
+                    configObj = JSON.parse(text);
+                } catch {
+                    // Try parsing JS object notation
+                    configObj = new Function(`return ${text}`)();
+                }
+
+                if (!configObj || typeof configObj !== 'object') {
+                    throw new Error('Config must be a valid JSON or JS object.');
+                }
+                auth.saveConfig(configObj);
+            } catch (err) {
+                alert('Invalid configuration format: ' + err.message);
+            }
+        });
+
+        $('btn-reset-config').addEventListener('click', () => {
+            if (confirm('Reset Firebase configuration to default?')) {
+                auth.clearConfig();
+            }
+        });
+
+        // ─── UTILITIES ─────────────────────────────────────────────────────────
+        function showAlert(msg) {
+            alertMsg.textContent = msg;
+            alertBox.style.display = 'flex';
+        }
+
+        function hideAlert() {
+            alertBox.style.display = 'none';
+        }
+
+        function setBtnLoading(btn, loader, loading) {
+            btn.disabled = loading;
+            const arrow = btn.querySelector('.btn-arrow');
+            const txt = btn.querySelector('.btn-text');
+            if (loading) {
+                if (arrow) arrow.style.display = 'none';
+                if (loader) loader.style.display = 'inline-block';
+            } else {
+                if (arrow) arrow.style.display = 'inline-block';
+                if (loader) loader.style.display = 'none';
+            }
+        }
+
+        function showToast(message, type = 'info', duration = 3500) {
+            const container = $('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icons = {
+                success: '✓',
+                error: '✕',
+                info: 'ℹ',
+                warning: '⚠'
+            };
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ'}</span>
+                <span class="toast-text">${message}</span>
+            `;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('visible'));
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+    })();
+    </script>
+</body>
+</html>

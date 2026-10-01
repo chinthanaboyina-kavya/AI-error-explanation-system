@@ -1,0 +1,240 @@
+ERROR: ModuleNotFoundError
+DESCRIPTION: Python cannot find the specified module. This happens when you try to import a module that is not installed or not in the Python path.
+CAUSE: The module is not installed, or you have a typo in the import statement, or the module is not in sys.path.
+SOLUTION: Run `pip install <module_name>` to install the missing module. Check for typos in the import statement. Use `pip list` to see installed packages.
+EXAMPLE_CODE:
+# Wrong
+import nummpy  # typo
+
+# Correct
+import numpy
+pip install numpy
+
+---
+
+ERROR: TypeError
+DESCRIPTION: An operation is applied to an object of an inappropriate type.
+CAUSE: Passing wrong data types to functions, mixing incompatible types in operations.
+SOLUTION: Check the types of your variables using type(). Ensure you are passing the correct types to functions.
+EXAMPLE_CODE:
+# Wrong
+result = "5" + 5  # TypeError: can only concatenate str to str
+
+# Correct
+result = int("5") + 5  # = 10
+# or
+result = "5" + str(5)  # = "55"
+
+---
+
+ERROR: IndexError
+DESCRIPTION: An index is out of range for a list or sequence.
+CAUSE: Trying to access an element at an index that does not exist in the list.
+SOLUTION: Check the length of the list using len(). Use negative indexing or slicing safely. Add bounds checking.
+EXAMPLE_CODE:
+my_list = [1, 2, 3]
+# Wrong
+print(my_list[5])  # IndexError: list index out of range
+
+# Correct
+if len(my_list) > 5:
+    print(my_list[5])
+else:
+    print("Index out of range")
+
+---
+
+ERROR: KeyError
+DESCRIPTION: A dictionary key is not found.
+CAUSE: Trying to access a dictionary with a key that does not exist.
+SOLUTION: Use dict.get(key, default) to safely access dictionary values. Check if the key exists using 'key in dict'.
+EXAMPLE_CODE:
+my_dict = {"name": "Alice", "age": 30}
+# Wrong
+print(my_dict["email"])  # KeyError: 'email'
+
+# Correct
+print(my_dict.get("email", "No email found"))
+# or
+if "email" in my_dict:
+    print(my_dict["email"])
+
+---
+
+ERROR: AttributeError
+DESCRIPTION: An attribute reference or assignment fails because the object does not have that attribute.
+CAUSE: Calling a method or accessing a property that does not exist on the object.
+SOLUTION: Check the object's type and available methods using dir(). Ensure the object is of the expected type.
+EXAMPLE_CODE:
+# Wrong
+my_num = 42
+my_num.append(1)  # AttributeError: 'int' object has no attribute 'append'
+
+# Correct
+my_list = [42]
+my_list.append(1)
+
+---
+
+ERROR: NameError
+DESCRIPTION: A local or global name is not found.
+CAUSE: Using a variable before assigning it, or a typo in the variable name.
+SOLUTION: Ensure the variable is defined before using it. Check for typos. Use proper scope (local vs global).
+EXAMPLE_CODE:
+# Wrong
+print(my_variable)  # NameError: name 'my_variable' is not defined
+
+# Correct
+my_variable = "Hello"
+print(my_variable)
+
+---
+
+ERROR: ValueError
+DESCRIPTION: A function receives an argument of the right type but an inappropriate value.
+CAUSE: Providing values outside the expected range or format.
+SOLUTION: Validate input values before passing them to functions. Use try/except blocks.
+EXAMPLE_CODE:
+# Wrong
+int("hello")  # ValueError: invalid literal for int() with base 10: 'hello'
+
+# Correct
+try:
+    result = int("hello")
+except ValueError:
+    print("Cannot convert 'hello' to integer")
+
+---
+
+ERROR: ZeroDivisionError
+DESCRIPTION: Division by zero was attempted.
+CAUSE: Dividing a number by zero.
+SOLUTION: Check the divisor before dividing. Use a conditional to avoid division by zero.
+EXAMPLE_CODE:
+# Wrong
+result = 10 / 0  # ZeroDivisionError: division by zero
+
+# Correct
+divisor = 0
+if divisor != 0:
+    result = 10 / divisor
+else:
+    print("Cannot divide by zero")
+
+---
+
+ERROR: IndentationError
+DESCRIPTION: There is an incorrect indentation in the code.
+CAUSE: Mixing tabs and spaces, or incorrect indentation levels.
+SOLUTION: Use consistent indentation (4 spaces recommended). Configure your editor to show whitespace characters.
+EXAMPLE_CODE:
+# Wrong
+def my_function():
+print("Hello")  # IndentationError: expected an indented block
+
+# Correct
+def my_function():
+    print("Hello")
+
+---
+
+ERROR: SyntaxError
+DESCRIPTION: The Python parser encountered a syntax error.
+CAUSE: Missing colons, parentheses, brackets, or other syntax elements.
+SOLUTION: Read the error message carefully — it points to the approximate location. Use a linter like pylint or flake8.
+EXAMPLE_CODE:
+# Wrong
+if x == 5  # SyntaxError: invalid syntax (missing colon)
+    print("x is 5")
+
+# Correct
+if x == 5:
+    print("x is 5")
+
+---
+
+ERROR: RecursionError
+DESCRIPTION: Maximum recursion depth exceeded.
+CAUSE: Infinite or very deep recursion in recursive functions.
+SOLUTION: Add a base case to recursive functions. Increase recursion limit with sys.setrecursionlimit() if needed. Consider converting to iterative approach.
+EXAMPLE_CODE:
+# Wrong
+def factorial(n):
+    return n * factorial(n - 1)  # RecursionError: missing base case
+
+# Correct
+def factorial(n):
+    if n <= 1:  # Base case
+        return 1
+    return n * factorial(n - 1)
+
+---
+
+ERROR: FileNotFoundError
+DESCRIPTION: A file or directory was requested but does not exist.
+CAUSE: Incorrect file path, file was moved or deleted.
+SOLUTION: Check that the file path is correct. Use os.path.exists() to verify the file exists before opening.
+EXAMPLE_CODE:
+# Wrong
+with open("nonexistent_file.txt", "r") as f:
+    content = f.read()
+
+# Correct
+import os
+file_path = "my_file.txt"
+if os.path.exists(file_path):
+    with open(file_path, "r") as f:
+        content = f.read()
+else:
+    print(f"File {file_path} not found")
+
+---
+
+ERROR: PermissionError
+DESCRIPTION: An operation was not permitted due to file system permissions.
+CAUSE: Trying to read/write a file without the required permissions.
+SOLUTION: Check file permissions. Run with appropriate privileges. Change file permissions using os.chmod().
+EXAMPLE_CODE:
+import os
+# Check permissions before writing
+if os.access("file.txt", os.W_OK):
+    with open("file.txt", "w") as f:
+        f.write("content")
+else:
+    print("No write permission")
+
+---
+
+ERROR: MemoryError
+DESCRIPTION: Operation ran out of memory.
+CAUSE: Trying to allocate more memory than is available.
+SOLUTION: Process data in chunks. Use generators instead of lists. Free unused objects. Use efficient data structures.
+EXAMPLE_CODE:
+# Wrong
+huge_list = list(range(1000000000))  # MemoryError
+
+# Correct - use generators
+def large_range():
+    for i in range(1000000000):
+        yield i
+
+for item in large_range():
+    process(item)
+
+---
+
+ERROR: StopIteration
+DESCRIPTION: An iterator has no more items.
+CAUSE: Calling next() on an exhausted iterator.
+SOLUTION: Use for loops instead of manually calling next(). Handle StopIteration with try/except.
+EXAMPLE_CODE:
+my_iter = iter([1, 2, 3])
+# Wrong - will raise StopIteration after 3 calls
+next(my_iter)
+next(my_iter)
+next(my_iter)
+next(my_iter)  # StopIteration
+
+# Correct
+for item in [1, 2, 3]:
+    print(item)

@@ -1,0 +1,237 @@
+ERROR: OperationalError: no such table
+DESCRIPTION: SQLite cannot find the specified table in the database.
+CAUSE: The table does not exist in the database, the database file is wrong, or the table was not created.
+SOLUTION: Verify the table exists using .tables command in SQLite. Create the table if it doesn't exist. Check the database connection.
+EXAMPLE_CODE:
+-- Create table if not exists
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE
+);
+
+-- Check existing tables
+SELECT name FROM sqlite_master WHERE type='table';
+
+---
+
+ERROR: IntegrityError: UNIQUE constraint failed
+DESCRIPTION: An attempt to insert a duplicate value into a column with a UNIQUE constraint.
+CAUSE: Inserting a record with a value that already exists in a column marked as UNIQUE.
+SOLUTION: Check if the record exists before inserting. Use INSERT OR IGNORE or INSERT OR REPLACE. Use ON CONFLICT clause.
+EXAMPLE_CODE:
+-- Wrong (if email already exists)
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+
+-- Correct - use OR IGNORE to skip duplicates
+INSERT OR IGNORE INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+
+-- Or use REPLACE to update existing
+INSERT OR REPLACE INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+
+-- Python sqlite3 example
+try:
+    cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
+except sqlite3.IntegrityError:
+    print("Email already exists")
+
+---
+
+ERROR: ProgrammingError: Incorrect number of bindings
+DESCRIPTION: The number of binding parameters does not match the number of placeholders.
+CAUSE: Mismatch between ? placeholders in SQL and the number of values provided.
+SOLUTION: Count your ? placeholders and ensure the tuple/list has the same number of values.
+EXAMPLE_CODE:
+# Wrong
+cursor.execute("SELECT * FROM users WHERE id = ? AND name = ?", (1,))  # Only 1 value for 2 placeholders
+
+# Correct
+cursor.execute("SELECT * FROM users WHERE id = ? AND name = ?", (1, "Alice"))
+
+---
+
+ERROR: IntegrityError: NOT NULL constraint failed
+DESCRIPTION: Attempting to insert NULL into a column that has a NOT NULL constraint.
+CAUSE: Not providing a value for a required column.
+SOLUTION: Provide values for all NOT NULL columns. Set DEFAULT values in schema. Validate data before insertion.
+EXAMPLE_CODE:
+-- Table definition
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT
+);
+
+-- Wrong
+INSERT INTO users (id, email) VALUES (1, 'test@example.com');  -- name is NULL
+
+-- Correct
+INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'test@example.com');
+
+---
+
+ERROR: OperationalError: database is locked
+DESCRIPTION: The database is locked by another process or connection.
+CAUSE: Multiple connections writing to SQLite simultaneously, or a connection was not closed properly.
+SOLUTION: Close database connections after use. Use connection pooling. Consider upgrading to PostgreSQL for concurrent access.
+EXAMPLE_CODE:
+# Python - always close connections
+import sqlite3
+
+conn = sqlite3.connect('mydb.db')
+try:
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users VALUES (?, ?)", (1, 'Alice'))
+    conn.commit()
+finally:
+    conn.close()  # Always close!
+
+# Or use context manager
+with sqlite3.connect('mydb.db') as conn:
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users VALUES (?, ?)", (1, 'Alice'))
+
+---
+
+ERROR: OperationalError: near syntax error
+DESCRIPTION: SQL syntax error in the query.
+CAUSE: Missing keywords, incorrect syntax, unbalanced parentheses, or reserved words used as identifiers.
+SOLUTION: Review the SQL syntax carefully. Use backticks or brackets for reserved word column names. Use an SQL linter.
+EXAMPLE_CODE:
+-- Wrong
+SELECT * FORM users;  -- Typo: FORM instead of FROM
+
+-- Wrong - using reserved word as column name
+SELECT order FROM orders;
+
+-- Correct
+SELECT * FROM users;
+
+-- Correct - quote reserved words
+SELECT `order` FROM orders;
+-- Or use alias
+SELECT o.order_id FROM orders o;
+
+---
+
+ERROR: IntegrityError: FOREIGN KEY constraint failed
+DESCRIPTION: A foreign key constraint was violated.
+CAUSE: Inserting a value that does not exist in the referenced table, or deleting a referenced record.
+SOLUTION: Ensure the referenced record exists before inserting. Enable foreign keys in SQLite. Use CASCADE options.
+EXAMPLE_CODE:
+-- Enable foreign keys in SQLite (must be done per connection)
+PRAGMA foreign_keys = ON;
+
+-- Schema
+CREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE employees (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    dept_id INTEGER REFERENCES departments(id)
+);
+
+-- Wrong - dept_id 99 does not exist
+INSERT INTO employees VALUES (1, 'Alice', 99);
+
+-- Correct
+INSERT INTO departments VALUES (1, 'Engineering');
+INSERT INTO employees VALUES (1, 'Alice', 1);
+
+---
+
+ERROR: DataError: value too long
+DESCRIPTION: A value exceeds the maximum allowed length for a column.
+CAUSE: Inserting a string longer than the defined column size.
+SOLUTION: Increase column size in schema. Truncate input data. Validate data length before insertion.
+EXAMPLE_CODE:
+-- SQLite is lenient with text length, but in other DBs:
+-- PostgreSQL: column "name" is of type character varying(50) but expression is of type text
+
+-- Add length validation in Python
+def safe_insert(name, max_length=50):
+    if len(name) > max_length:
+        name = name[:max_length]
+    cursor.execute("INSERT INTO users (name) VALUES (?)", (name,))
+
+---
+
+ERROR: OperationalError: unable to open database file
+DESCRIPTION: SQLite cannot open or create the database file.
+CAUSE: Incorrect file path, insufficient permissions, or the directory does not exist.
+SOLUTION: Check the file path. Ensure the directory exists. Check file system permissions.
+EXAMPLE_CODE:
+import sqlite3
+import os
+
+db_path = "database/myapp.db"
+db_dir = os.path.dirname(db_path)
+
+# Create directory if it doesn't exist
+if db_dir and not os.path.exists(db_dir):
+    os.makedirs(db_dir)
+
+conn = sqlite3.connect(db_path)
+
+---
+
+ERROR: JavaScript TypeError: Cannot read property of undefined
+DESCRIPTION: Trying to access a property or method on an undefined or null value.
+CAUSE: Variable is not initialized, API response is unexpected, or accessing nested properties without null checks.
+SOLUTION: Use optional chaining (?.), nullish coalescing (??), or null checks before accessing properties.
+EXAMPLE_CODE:
+// Wrong
+const user = undefined;
+console.log(user.name);  // TypeError: Cannot read properties of undefined
+
+// Correct - Optional chaining
+const user = undefined;
+console.log(user?.name);  // undefined (no error)
+
+// Correct - null check
+if (user && user.name) {
+    console.log(user.name);
+}
+
+// Correct - with default value
+const name = user?.name ?? "Anonymous";
+
+---
+
+ERROR: JavaScript ReferenceError: variable is not defined
+DESCRIPTION: Code tries to use a variable that has not been declared.
+CAUSE: Typo in variable name, using variable before declaration, or scope issues.
+SOLUTION: Declare variables with let/const/var before use. Check for typos. Understand scope.
+EXAMPLE_CODE:
+// Wrong
+console.log(myVariable);  // ReferenceError: myVariable is not defined
+
+// Correct
+let myVariable = "Hello";
+console.log(myVariable);
+
+// Wrong - using before declaration with let/const
+console.log(count);  // ReferenceError: Cannot access 'count' before initialization
+let count = 0;
+
+// Correct
+let count = 0;
+console.log(count);
+
+---
+
+ERROR: JavaScript SyntaxError: Unexpected token
+DESCRIPTION: The JavaScript engine encountered an unexpected character.
+CAUSE: Missing braces, parentheses, semicolons, or other syntax issues.
+SOLUTION: Check for missing/extra brackets, parentheses, or commas. Use a linter like ESLint.
+EXAMPLE_CODE:
+// Wrong
+const obj = {
+    name: "Alice"
+    age: 30  // Missing comma
+};
+
+// Correct
+const obj = {
+    name: "Alice",
+    age: 30
+};

@@ -1,0 +1,188 @@
+ERROR: NullPointerException
+DESCRIPTION: An application attempts to use null where an object is required.
+CAUSE: Calling a method on a null object reference, accessing a field of a null object, or taking the length of null.
+SOLUTION: Check for null before using objects. Use Optional<T> in Java 8+. Initialize objects properly.
+EXAMPLE_CODE:
+// Wrong
+String str = null;
+str.length();  // NullPointerException
+
+// Correct
+String str = null;
+if (str != null) {
+    str.length();
+}
+// Or using Optional
+Optional<String> optStr = Optional.ofNullable(str);
+optStr.ifPresent(s -> System.out.println(s.length()));
+
+---
+
+ERROR: ArrayIndexOutOfBoundsException
+DESCRIPTION: An array has been accessed with an illegal index.
+CAUSE: The index is either negative or greater than or equal to the size of the array.
+SOLUTION: Always check array length before accessing elements. Use array.length - 1 as the maximum valid index.
+EXAMPLE_CODE:
+// Wrong
+int[] arr = {1, 2, 3};
+System.out.println(arr[5]);  // ArrayIndexOutOfBoundsException
+
+// Correct
+int index = 5;
+if (index >= 0 && index < arr.length) {
+    System.out.println(arr[index]);
+} else {
+    System.out.println("Index out of bounds");
+}
+
+---
+
+ERROR: ClassCastException
+DESCRIPTION: An attempt to cast an object to a subclass of which it is not an instance.
+CAUSE: Trying to cast an object to an incompatible type.
+SOLUTION: Use instanceof to check the type before casting. Use generics to avoid runtime cast issues.
+EXAMPLE_CODE:
+// Wrong
+Object obj = "Hello";
+Integer num = (Integer) obj;  // ClassCastException
+
+// Correct
+Object obj = "Hello";
+if (obj instanceof Integer) {
+    Integer num = (Integer) obj;
+} else {
+    System.out.println("Object is not an Integer");
+}
+
+---
+
+ERROR: StackOverflowError
+DESCRIPTION: A stack overflow occurs in the JVM.
+CAUSE: Infinite or very deep recursion without a proper base case.
+SOLUTION: Add proper base cases to recursive methods. Consider using an iterative approach with explicit stack.
+EXAMPLE_CODE:
+// Wrong
+public static int factorial(int n) {
+    return n * factorial(n - 1);  // StackOverflowError - no base case
+}
+
+// Correct
+public static int factorial(int n) {
+    if (n <= 1) return 1;  // Base case
+    return n * factorial(n - 1);
+}
+
+---
+
+ERROR: OutOfMemoryError
+DESCRIPTION: The JVM cannot allocate an object because it is out of memory.
+CAUSE: Memory leaks, loading too much data at once, not releasing object references.
+SOLUTION: Increase heap size with -Xmx flag. Fix memory leaks. Process data in batches.
+EXAMPLE_CODE:
+// JVM flag to increase memory
+// java -Xmx4g MyApplication
+
+// Fix memory leaks - close resources
+try (BufferedReader br = new BufferedReader(new FileReader("file.txt"))) {
+    String line;
+    while ((line = br.readLine()) != null) {
+        // Process line
+    }
+}
+
+---
+
+ERROR: NumberFormatException
+DESCRIPTION: Attempt to convert a string to a numeric type, but the string does not have the appropriate format.
+CAUSE: Parsing non-numeric strings as numbers.
+SOLUTION: Validate the string before parsing. Use try-catch to handle invalid input.
+EXAMPLE_CODE:
+// Wrong
+int num = Integer.parseInt("abc");  // NumberFormatException
+
+// Correct
+String input = "abc";
+try {
+    int num = Integer.parseInt(input);
+} catch (NumberFormatException e) {
+    System.out.println("Invalid number format: " + input);
+}
+
+---
+
+ERROR: ConcurrentModificationException
+DESCRIPTION: An object is modified while it is being iterated.
+CAUSE: Modifying a collection (add/remove elements) while iterating over it with a for-each loop.
+SOLUTION: Use Iterator's remove() method, or create a copy of the collection before modifying, or use CopyOnWriteArrayList.
+EXAMPLE_CODE:
+List<String> list = new ArrayList<>(Arrays.asList("a", "b", "c"));
+
+// Wrong
+for (String s : list) {
+    if (s.equals("b")) {
+        list.remove(s);  // ConcurrentModificationException
+    }
+}
+
+// Correct
+Iterator<String> iter = list.iterator();
+while (iter.hasNext()) {
+    if (iter.next().equals("b")) {
+        iter.remove();  // Safe removal
+    }
+}
+
+---
+
+ERROR: IllegalArgumentException
+DESCRIPTION: A method receives an argument that is not appropriate.
+CAUSE: Passing invalid values to methods (e.g., negative size for a collection).
+SOLUTION: Validate arguments before passing them. Use assertions or precondition checks.
+EXAMPLE_CODE:
+// Wrong
+int[] arr = new int[-5];  // IllegalArgumentException
+
+// Correct
+int size = -5;
+if (size > 0) {
+    int[] arr = new int[size];
+} else {
+    throw new IllegalArgumentException("Size must be positive: " + size);
+}
+
+---
+
+ERROR: FileNotFoundException
+DESCRIPTION: An attempt to open the file denoted by a specified pathname has failed.
+CAUSE: The file does not exist at the specified path, or the path is incorrect.
+SOLUTION: Check that the file path is correct. Use File.exists() before opening.
+EXAMPLE_CODE:
+// Wrong
+FileReader fr = new FileReader("nonexistent.txt");  // FileNotFoundException
+
+// Correct
+File file = new File("myfile.txt");
+if (file.exists()) {
+    FileReader fr = new FileReader(file);
+    // use fr
+} else {
+    System.out.println("File not found: " + file.getAbsolutePath());
+}
+
+---
+
+ERROR: ArithmeticException
+DESCRIPTION: An arithmetic error, such as dividing an integer by zero.
+CAUSE: Division by zero in integer arithmetic.
+SOLUTION: Check the divisor before dividing. Handle the exception.
+EXAMPLE_CODE:
+// Wrong
+int result = 10 / 0;  // ArithmeticException: / by zero
+
+// Correct
+int divisor = 0;
+if (divisor != 0) {
+    int result = 10 / divisor;
+} else {
+    System.out.println("Cannot divide by zero");
+}

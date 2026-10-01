@@ -1,0 +1,443 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered technical error explanation system using RAG, LangChain, FAISS, and local Ollama models. Instantly understand and fix Python, Java, JavaScript, and SQL errors.">
+    <meta name="keywords" content="AI error explanation, debugging assistant, Python errors, Java errors, LangChain, RAG, Ollama">
+    <meta name="author" content="AI Error Explanation System">
+    <meta property="og:title" content="AI Error Explanation System">
+    <meta property="og:description" content="Instantly explain and fix technical errors with AI-powered RAG technology">
+    <title>AI Error Explanation System | Smart Debugging Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+
+    <!-- Firebase Compat SDK (v10.8.0) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Auth Service -->
+    <script src="{% static 'firebase-config.js' %}"></script>
+</head>
+<body>
+
+    <!-- ═══ AUTH GUARD OVERLAY (Protects main page) ═════════════════════════════ -->
+    <div class="auth-guard-overlay" id="auth-guard-overlay">
+        <div class="auth-guard-card">
+            <div class="loading-ring auth-spin"></div>
+            <p class="auth-guard-text">Checking authentication...</p>
+        </div>
+    </div>
+
+    <!-- ═══ ANIMATED BACKGROUND ════════════════════════════════════════════════ -->
+    <div class="bg-gradient" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="floating-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- ═══ NAVBAR ═════════════════════════════════════════════════════════════ -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand">
+            <div class="nav-logo" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <path d="M14 2L24 8V20L14 26L4 20V8L14 2Z" stroke="url(#logoGrad)" stroke-width="2" fill="none"/>
+                    <circle cx="14" cy="14" r="4" fill="url(#logoGrad)"/>
+                    <defs>
+                        <linearGradient id="logoGrad" x1="4" y1="2" x2="24" y2="26">
+                            <stop offset="0%" stop-color="#6366f1"/>
+                            <stop offset="100%" stop-color="#a855f7"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="nav-title">AI<span class="gradient-text">Error</span>Explain</span>
+        </div>
+        <div class="nav-status" id="nav-status">
+            <span class="status-dot" id="ollama-status-dot" aria-label="Ollama service status"></span>
+            <span id="ollama-status-text">Checking...</span>
+        </div>
+        <div class="nav-actions">
+            <!-- User Profile & Sign Out -->
+            <div class="nav-user-profile" id="nav-user-profile" style="display: none;">
+                <div class="user-avatar" id="nav-user-avatar">U</div>
+                <div class="user-meta">
+                    <span class="user-email-text" id="nav-user-email">User</span>
+                    <span class="user-source-tag" id="nav-user-tag">Firebase</span>
+                </div>
+                <button class="btn-ghost btn-logout" id="btn-logout" aria-label="Sign out" title="Sign out of account">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                    </svg>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+
+            <button class="btn-ghost" id="btn-stats" aria-label="View system stats" title="System Statistics">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
+                </svg>
+                Stats
+            </button>
+            <button class="btn-ghost" id="btn-history" aria-label="View history" title="Recent queries">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                </svg>
+                History
+            </button>
+            <button class="btn-ghost" id="btn-rebuild" aria-label="Rebuild index" title="Rebuild vector index">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"/>
+                </svg>
+                Rebuild Index
+            </button>
+        </div>
+    </nav>
+
+    <!-- ═══ HERO SECTION ════════════════════════════════════════════════════════ -->
+    <header class="hero" role="banner">
+        <div class="hero-badge">
+            <span class="badge-dot" aria-hidden="true"></span>
+            Powered by RAG + Ollama
+        </div>
+        <h1 class="hero-title">
+            Explain Any<br>
+            <span class="gradient-text animated-gradient">Technical Error</span><br>
+            Instantly with AI
+        </h1>
+        <p class="hero-subtitle">
+            Paste your error → get a detailed explanation, root cause analysis,<br>
+            and step-by-step fix — powered by LangChain, FAISS &amp; local LLMs.
+        </p>
+        <div class="hero-stats" role="list">
+            <div class="stat-item" role="listitem">
+                <span class="stat-num">4+</span>
+                <span class="stat-label">Languages</span>
+            </div>
+            <div class="stat-divider" aria-hidden="true"></div>
+            <div class="stat-item" role="listitem">
+                <span class="stat-num">RAG</span>
+                <span class="stat-label">Powered</span>
+            </div>
+            <div class="stat-divider" aria-hidden="true"></div>
+            <div class="stat-item" role="listitem">
+                <span class="stat-num">Local</span>
+                <span class="stat-label">LLM</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══ MAIN CONTENT ════════════════════════════════════════════════════════ -->
+    <main class="main-content" id="main-content">
+
+        <!-- ─── INPUT CARD ─────────────────────────────────────────────────── -->
+        <section class="card input-card" aria-labelledby="input-heading">
+            <div class="card-header">
+                <h2 id="input-heading" class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    Paste Your Error
+                </h2>
+                <div class="char-counter">
+                    <span id="char-count">0</span>/5000
+                </div>
+            </div>
+
+            <div class="textarea-wrapper">
+                <textarea
+                    id="error-input"
+                    class="error-textarea"
+                    placeholder="Paste your error message, full stack trace, and relevant code here...
+
+Example:
+Traceback (most recent call last):
+  File &quot;app.py&quot;, line 5, in &lt;module&gt;
+    import numpy
+ModuleNotFoundError: No module named 'numpy'"
+                    maxlength="5000"
+                    aria-label="Error message input"
+                    aria-describedby="input-hint"
+                    spellcheck="false"
+                ></textarea>
+                <div class="textarea-glow" aria-hidden="true"></div>
+            </div>
+
+            <p id="input-hint" class="input-hint">
+                Supports Python, Java, JavaScript, and SQL. Include the code around the failing line for a more precise diagnosis.
+            </p>
+
+            <!-- Controls Row -->
+            <div class="controls-row">
+                <div class="control-group">
+                    <label for="language-select" class="control-label">Language</label>
+                    <select id="language-select" class="control-select" aria-label="Select programming language">
+                        <option value="auto">🤖 Auto-Detect</option>
+                        <option value="python">🐍 Python</option>
+                        <option value="java">☕ Java</option>
+                        <option value="javascript">⚡ JavaScript</option>
+                        <option value="sql">🗄️ SQL</option>
+                        <option value="general">🔧 General</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="model-select" class="control-label">Model</label>
+                    <select id="model-select" class="control-select" aria-label="Select LLM model">
+                        <option value="llama3.2">llama3.2</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <button class="btn-secondary" id="btn-clear" aria-label="Clear input">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                        Clear
+                    </button>
+                </div>
+
+                <div class="control-group flex-grow">
+                    <button class="btn-primary" id="btn-explain" aria-label="Explain error">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        <span id="btn-explain-text">Explain Error</span>
+                        <div class="btn-loader" id="btn-loader" aria-hidden="true"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Examples -->
+            <div class="quick-examples" role="region" aria-label="Quick example errors">
+                <span class="examples-label">Try an example:</span>
+                <div class="examples-chips">
+                    <button class="chip" data-example="python" aria-label="Load Python example">🐍 Python ModuleNotFoundError</button>
+                    <button class="chip" data-example="java" aria-label="Load Java example">☕ Java NullPointerException</button>
+                    <button class="chip" data-example="js" aria-label="Load JavaScript example">⚡ JS TypeError</button>
+                    <button class="chip" data-example="sql" aria-label="Load SQL example">🗄️ SQL IntegrityError</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── RESULT CARD ─────────────────────────────────────────────────── -->
+        <section class="card result-card" id="result-card" aria-labelledby="result-heading" aria-live="polite">
+            <!-- Placeholder State -->
+            <div class="result-placeholder" id="result-placeholder" role="img" aria-label="Awaiting error input">
+                <div class="placeholder-icon" aria-hidden="true">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="32" r="28" stroke="url(#phGrad)" stroke-width="2" stroke-dasharray="6 4"/>
+                        <path d="M32 20v12M32 38v4" stroke="url(#phGrad)" stroke-width="3" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="phGrad" x1="4" y1="4" x2="60" y2="60">
+                                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.6"/>
+                                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h3 class="placeholder-title">Ready to Explain</h3>
+                <p class="placeholder-text">Paste an error message above and click <strong>Explain Error</strong> to get an AI-powered explanation with fixes.</p>
+                <div class="placeholder-features" role="list">
+                    <div class="feature-pill" role="listitem">
+                        <span aria-hidden="true">🔍</span> Root Cause Analysis
+                    </div>
+                    <div class="feature-pill" role="listitem">
+                        <span aria-hidden="true">🛠️</span> Step-by-Step Fix
+                    </div>
+                    <div class="feature-pill" role="listitem">
+                        <span aria-hidden="true">💡</span> Code Examples
+                    </div>
+                    <div class="feature-pill" role="listitem">
+                        <span aria-hidden="true">🚀</span> Prevention Tips
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="result-loading" id="result-loading" hidden aria-live="polite" aria-busy="true">
+                <div class="loading-animation" aria-hidden="true">
+                    <div class="loading-ring"></div>
+                    <div class="loading-ring ring-2"></div>
+                    <div class="loading-ring ring-3"></div>
+                    <div class="loading-brain" aria-hidden="true">🧠</div>
+                </div>
+                <h3 class="loading-title">Analyzing Error...</h3>
+                <div class="loading-steps" role="list">
+                    <div class="loading-step active" id="step-1" role="listitem">
+                        <div class="step-dot" aria-hidden="true"></div>
+                        <span>Searching knowledge base with RAG</span>
+                    </div>
+                    <div class="loading-step" id="step-2" role="listitem">
+                        <div class="step-dot" aria-hidden="true"></div>
+                        <span>Retrieving relevant context from FAISS</span>
+                    </div>
+                    <div class="loading-step" id="step-3" role="listitem">
+                        <div class="step-dot" aria-hidden="true"></div>
+                        <span>Generating explanation with LLM</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Content -->
+            <div class="result-content" id="result-content" hidden>
+                <div class="result-header">
+                    <h2 id="result-heading" class="result-title">
+                        <span class="result-lang-badge" id="result-lang-badge">Python</span>
+                        Error Explanation
+                    </h2>
+                    <div class="result-meta">
+                        <span class="meta-item" id="result-model-badge" title="Model used">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                            </svg>
+                            <span id="result-model-text">llama3.2</span>
+                        </span>
+                        <span class="meta-item" title="RAG context snippets">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <span id="result-snippets">4 context snippets</span>
+                        </span>
+                        <span class="meta-item mode-badge" id="result-mode-badge" title="Generation Mode">
+                            <span class="mode-dot" id="mode-dot"></span>
+                            <span id="result-mode-text">Local LLM</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="result-body" id="result-body" role="article" aria-label="Error explanation"></div>
+
+                <!-- Feedback Section -->
+                <div class="feedback-section" id="feedback-section">
+                    <p class="feedback-question">Was this explanation helpful?</p>
+                    <div class="feedback-stars" id="feedback-stars" role="group" aria-label="Rate this explanation">
+                        <button class="star-btn" data-rating="1" aria-label="Rate 1 star">★</button>
+                        <button class="star-btn" data-rating="2" aria-label="Rate 2 stars">★</button>
+                        <button class="star-btn" data-rating="3" aria-label="Rate 3 stars">★</button>
+                        <button class="star-btn" data-rating="4" aria-label="Rate 4 stars">★</button>
+                        <button class="star-btn" data-rating="5" aria-label="Rate 5 stars">★</button>
+                    </div>
+                    <div class="copy-actions">
+                        <button class="btn-ghost-sm" id="btn-copy" aria-label="Copy explanation">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            Copy
+                        </button>
+                        <button class="btn-ghost-sm" id="btn-new-query" aria-label="New query">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M12 5v14M5 12l7-7 7 7"/>
+                            </svg>
+                            New Query
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ═══ HISTORY PANEL ═══════════════════════════════════════════════════════ -->
+    <aside class="history-panel" id="history-panel" aria-label="Query history" aria-hidden="true" role="complementary">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                </svg>
+                Recent Queries
+            </h2>
+            <div class="panel-actions">
+                <button class="btn-clear-all" id="btn-clear-history" title="Clear all history">Clear All</button>
+                <button class="btn-close" id="btn-close-history" aria-label="Close history panel">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="panel-body" id="history-list" role="list" aria-live="polite">
+            <div class="panel-loading" aria-live="polite">Loading history...</div>
+        </div>
+    </aside>
+
+    <!-- ═══ STATS MODAL ═════════════════════════════════════════════════════════ -->
+    <div class="modal" id="stats-modal" aria-hidden="true" role="dialog" aria-labelledby="stats-modal-title">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="stats-modal-title" class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 20V10M12 20V4M6 20v-6"/>
+                    </svg>
+                    System Statistics &amp; Knowledge Base
+                </h3>
+                <button class="btn-close" id="btn-close-stats" aria-label="Close stats modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="stats-content">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-box-val" id="stat-total-queries">0</span>
+                        <span class="stat-box-lbl">Total Queries</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-box-val" id="stat-kb-docs">4</span>
+                        <span class="stat-box-lbl">Knowledge Files</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-box-val" id="stat-avg-rating">--</span>
+                        <span class="stat-box-lbl">Avg User Rating</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-box-val" id="stat-active-model">gemma3:1b</span>
+                        <span class="stat-box-lbl">Active Model</span>
+                    </div>
+                </div>
+                <div class="stats-section">
+                    <h4 class="stats-subhead">Knowledge Base Coverage</h4>
+                    <div class="stats-tags" id="stats-languages">
+                        <span class="lang-tag">Python (python_errors.txt)</span>
+                        <span class="lang-tag">Java (java_errors.txt)</span>
+                        <span class="lang-tag">JavaScript (javascript_errors.txt)</span>
+                        <span class="lang-tag">SQL (sql_errors.txt)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ TOAST NOTIFICATIONS ═══════════════════════════════════════════════ -->
+    <div class="toast-container" id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ═══ OVERLAY ═══════════════════════════════════════════════════════════ -->
+    <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+    <!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="gradient-text font-bold">AI Error Explanation System</span>
+            </div>
+            <div class="footer-stack" role="list" aria-label="Technology stack">
+                <span class="stack-badge" role="listitem">Django</span>
+                <span class="stack-badge" role="listitem">LangChain</span>
+                <span class="stack-badge" role="listitem">FAISS</span>
+                <span class="stack-badge" role="listitem">Ollama</span>
+                <span class="stack-badge" role="listitem">SQLite</span>
+                <span class="stack-badge" role="listitem">SentenceTransformers</span>
+            </div>
+            <p class="footer-note">Error text is processed by your local Ollama service.</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'script.js' %}"></script>
+</body>
+</html>
